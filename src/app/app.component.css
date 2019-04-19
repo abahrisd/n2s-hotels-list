@@ -1,0 +1,17 @@
+.loader-container {
+    position: absolute;
+    width: 100%;
+}
+
+.container {
+    padding: 30px;
+}
+.filter-form {
+    /*padding: 30px;*/
+}
+.filter-form__date-field {
+    margin-right: 20px;
+}
+.filter-form__form-field {
+
+}
