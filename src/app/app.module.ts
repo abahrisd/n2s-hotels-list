@@ -4,7 +4,13 @@ import {EffectsModule} from "@ngrx/effects";
 import { StoreModule } from '@ngrx/store';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import {MatButtonModule, MatFormFieldModule, MatInputModule, MatNativeDateModule} from "@angular/material";
+import {
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatNativeDateModule
+} from "@angular/material";
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 
@@ -14,10 +20,11 @@ import { WebsocketModule } from './modules/websocket';
 import { environment } from '../environments/environment';
 import { HotelListItemComponent } from './components/hotel-list-item/hotel-list-item.component';
 import {HotelsEffects} from "./app.effects";
+import { StarsRatingComponent } from './shared/components/stars-rating/stars-rating.component';
 
 
 @NgModule({
-    declarations: [AppComponent, HotelListItemComponent],
+    declarations: [AppComponent, HotelListItemComponent, StarsRatingComponent],
     imports: [
         BrowserModule,
         FormsModule,
@@ -35,6 +42,7 @@ import {HotelsEffects} from "./app.effects";
         MatFormFieldModule,
         MatInputModule,
         MatButtonModule,
+        MatIconModule,
     ],
     providers: [],
     bootstrap: [AppComponent]
