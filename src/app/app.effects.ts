@@ -2,19 +2,32 @@ import { Injectable } from '@angular/core';
 import { Actions, Effect, ofType } from '@ngrx/effects';
 import { EMPTY, of } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
-import { ActionTypes, SearchHotels, SearchHotelsSuccess, Fail } from './app.actions';
+import {ActionTypes, SearchHotels, SearchHotelsSuccess, Fail, StartSearchHotels, Empty} from './app.actions';
 import {WebsocketService} from "./modules/websocket";
 import {SearchParams} from "./shared/models/search-params.model";
 
 @Injectable()
-export class NotesEffects {
+export class HotelsEffects {
     @Effect()
     searchHotels$ = this.actions$.pipe(
-        ofType(ActionTypes.SearchHotels),
-        map((action: SearchHotels) => action.payload),
-        map((params: SearchParams) =>
-            this.wsService.searchHotels(params)
-        ),
+        ofType(ActionTypes.StartSearchHotels),
+        map((action: StartSearchHotels) => action.payload),
+        map((params: SearchParams) => {
+            this.wsService.searchHotels(params);
+            return new Empty;
+        }),
+        catchError(err => {
+            return of(new Fail(err));
+        })
+    );
+
+    @Effect()
+    reconnect$ = this.actions$.pipe(
+        ofType(ActionTypes.Reconnect),
+        map(() => {
+            this.wsService.connect()
+            return new Empty;
+        }),
         catchError(err => {
             return of(new Fail(err));
         })

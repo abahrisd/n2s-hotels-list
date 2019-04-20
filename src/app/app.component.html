@@ -3,6 +3,27 @@
 </div>
 
 <div class="container">
+    <div>
+        <ng-container [ngSwitch]="connection$ | async">
+            <span *ngSwitchCase="ActionTypes.Conneect">Подключаемся к серверу...</span>
+            <span *ngSwitchCase="ActionTypes.ConneectSuccess">Подключение установлено</span>
+            <span *ngSwitchCase="ActionTypes.ConneectFail">Ошибка подклчения, переподключаемся...</span>
+            <div *ngSwitchCase="ActionTypes.ConneectReconnectionExceed">
+                <span>Превышен лимит попыток подключения, попробуйте обновить страницу</span>
+                <button mat-stroked-button (click)="onReconnectClick()" color="accent">Переподключиться</button>
+            </div>
+
+        </ng-container>
+    </div>
+
+    <div *ngIf="(connection$ | async) === ActionTypes.ConneectSuccess">
+        <ng-container [ngSwitch]="authorization$ | async">
+            <span *ngSwitchCase="ActionTypes.AutorizeStart">Авторизуемся...</span>
+            <span *ngSwitchCase="ActionTypes.AutorizeSuccess">Авторизация успешна</span>
+            <span *ngSwitchCase="ActionTypes.AutorizeFail">Ошибка авторизации, уточните свои авторизационные данные</span>
+        </ng-container>
+    </div>
+
     <h1>Hotels search</h1>
 
     <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="onFilterFormSubmit(filterForm)">

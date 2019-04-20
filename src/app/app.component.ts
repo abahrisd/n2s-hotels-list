@@ -4,8 +4,10 @@ import { Observable } from 'rxjs';
 
 import { WebsocketService, WS } from './modules/websocket';
 import {environment} from "../environments/environment";
-import {State} from "./reducers";
+import {HotelsState} from "./reducers";
 import {Store} from "@ngrx/store";
+import {ActionTypes, AuthorizationTypesUnion, ConnectionTypesUnion, Reconnect, StartSearchHotels} from "./app.actions";
+import {Hotel} from "./shared/models";
 
 export interface IMessage {
     id: number;
@@ -19,85 +21,42 @@ export interface IMessage {
 })
 
 export class AppComponent implements OnInit {
-    title = 'n2s-hotels-list';
 
-    private messages$: Observable<IMessage[]>;
-    private counter$: Observable<number>;
-    private texts$: Observable<string[]>;
+    public connection$: Observable<ConnectionTypesUnion>;
+    public authorization$: Observable<AuthorizationTypesUnion>;
     public isLoading$: Observable<boolean>;
-    public isLoading = false;
-
+    public hotels$: Observable<Hotel[]>;
+    public ActionTypes = ActionTypes;
     public filterForm: FormGroup;
 
-    constructor(private fb: FormBuilder, private wsService: WebsocketService, private store$: Store<State>) {
+    constructor(private fb: FormBuilder, private wsService: WebsocketService, private store$: Store<HotelsState>) {
     }
 
     ngOnInit() {
         this.filterForm = this.fb.group({
-            dateFrom: ['', Validators.required],
-            dateTo: ['', Validators.required],
+            dateFrom: [new Date(2019, 4, 1), Validators.required],
+            dateTo: [new Date(2019, 4, 2), Validators.required],
         });
 
-        this.isLoading$ = this.wsService.isLoading$;
-
-        // this.isLoading$ = this.store$.select('hotelsData.isLoading');
-
-        this.authorize();
-
-        // get messages
-        this.messages$ = this.wsService.getMessages();
-
-        // get counter
-        // this.counter$ = this.wsService.on<number>(WS.ON.COUNTER);
-
-        // get texts
-        // this.texts$ = this.wsService.on<string[]>(WS.ON.UPDATE_TEXTS);
-    }
-    authorize() {
-        this.wsService.send(JSON.parse(environment.wsAuthenticate));
+        this.hotels$ = this.store$.select('hotelsData.list');
+        this.isLoading$ = this.store$.select('hotelsData.isLoading');
+        this.connection$ = this.store$.select('connection');
+        this.authorization$ = this.store$.select('authorization');
     }
 
-    public searchHotels(params): void {
-        const searchRequest = {
-            "action": "accommodation",
-            "data": {
-                "place": {
-                    "in": "CI005575LO"
-                    },
-                "date": {
-                    "in": 1558915200000,
-                    "out": 1559001600000
-                    },
-                "families": [
-                    {
-                    "adults": 2
-                    }
-                ],
-                "lastid": 0,
-                "num": 5
-            },
-            "key": "58fd27fa-4f81-4e67-a6bf-0e0e3fe4d876",
-            "type": "service"
-        };
-
-        this.wsService.isLoading$.next(true);
-
-        setTimeout(() => {
-            this.wsService.isLoading$.next(false);
-        }, 2000);
-
-        // this.wsService.searchHotels(params)
-        // this.wsService.send(searchRequest);
+    onReconnectClick() {
+        this.store$.dispatch(new Reconnect)
     }
 
     onFilterFormSubmit(form) {
         if (form.valid) {
-            const params = Object.keys(form.value).reduce((acc, val) => {
-                acc[val] = form.value[val].getTime();
-                return acc;
-            }, {});
 
-            this.searchHotels(params);
+            const params = {
+                timestampFrom: form.value.dateFrom.getTime(),
+                timestampTo: form.value.dateTo.getTime(),
+            };
+
+            this.store$.dispatch(new StartSearchHotels(params));
         }
     }
 

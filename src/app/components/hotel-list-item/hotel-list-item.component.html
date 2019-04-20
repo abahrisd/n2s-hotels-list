@@ -1,0 +1,35 @@
+
+<div>
+    <div class="img-block">
+        <img class="img-hotel" [src]="imgSrc" alt="">
+        <div class="discount-block">
+            <span class="discount-text">Сэкономьте {{discountPercent}}%</span>
+        </div>
+    </div>
+
+    <div class="description-block">
+        <h2>{{hotelName}}</h2>
+        <div>Звёздочки: {{cat + 3}}</div> <!-- stars component-->
+        <div>
+            <span>Расположение</span>
+            <span>{{locationName}}</span>
+        </div>
+    </div>
+
+    <div class="price-block">
+        <div class="price-discount">
+            <ng-container *ngIf="tpayment; else priceNoDiscount">
+                <span class="price-no-discount">{payment} RUB</span>
+                <span class="price">{{tpayment}} RUB</span>
+            </ng-container>
+        </div>
+
+        <div>
+            <button mat-flat-button color="primary" class="watch-hotel">Посмотреть</button>
+        </div>
+    </div>
+</div>
+
+<ng-template #priceNoDiscount>
+    <span class="price">{{payment}} RUB</span>
+</ng-template>

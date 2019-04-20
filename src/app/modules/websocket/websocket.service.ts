@@ -2,12 +2,27 @@ import { Injectable, OnDestroy, Inject } from '@angular/core';
 import { Observable, SubscriptionLike, Subject, Observer, interval } from 'rxjs';
 import {filter, map, tap} from 'rxjs/operators';
 import { WebSocketSubject, WebSocketSubjectConfig } from 'rxjs/webSocket';
+import concat from 'lodash/concat';
+import get from 'lodash/get';
 
 import { share, distinctUntilChanged, takeWhile } from 'rxjs/operators';
 import { IWebsocketService, IWsMessage, WebSocketConfig } from './websocket.interfaces';
 import { config } from './websocket.config';
 import {SearchParams} from "../../shared/models/search-params.model";
 import {environment} from "../../../environments/environment";
+import {Hotel} from "../../shared/models/hotel.model";
+import {Store} from "@ngrx/store";
+import {HotelsState} from "../../reducers";
+import {
+    AutorizeFail,
+    AutorizeStart, AutorizeSuccess,
+    Conneect,
+    ConneectFail,
+    ConneectReconnectionExceed,
+    ConneectSuccess, SearchHotelsSuccess,
+    UpdateHotels
+} from "../../app.actions";
+import {wsSuccesStatus} from "../../app.constants";
 
 @Injectable({
     providedIn: 'root'
@@ -30,9 +45,11 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
 
     public status$: Observable<boolean>;
     public isLoading$ = new Subject<boolean>();
+    private lastParams: SearchParams;
+    private searchResult: any;
     // private isLoading$ = new Subject<boolean>;
 
-    constructor(@Inject(config) private wsConfig: WebSocketConfig) {
+    constructor(@Inject(config) private wsConfig: WebSocketConfig, private store$: Store<HotelsState>) {
         this.wsMessages$ = new Subject<IWsMessage<any>>();
 
         this.reconnectInterval = wsConfig.reconnectInterval || 5000; // pause between connections
@@ -48,7 +65,7 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
             },
             openObserver: {
                 next: (event: Event) => {
-                    console.log('WebSocket connected!');
+                    this.store$.dispatch(new ConneectSuccess());
                     this.connection$.next(true);
                 }
             }
@@ -65,12 +82,64 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
                 this.isConnected = isConnected;
 
                 if (!this.reconnection$ && typeof(isConnected) === 'boolean' && !isConnected) {
+                    this.store$.dispatch(new ConneectFail());
+                    console.log('reconnect', );
                     this.reconnect();
+                } else {
+                    this.authorize();
                 }
+
             });
 
         this.websocketSub = this.wsMessages$.subscribe(
-            null, (error: ErrorEvent) => console.error('WebSocket error!', error)
+            ((response: any) => {
+
+                /*
+                * итак
+                * здесь надо собирать результат в переменную/поток до тех пор пока поле data.done не будет равно true
+                * как только data.done === true, показываем результаты, или можно показывать результаты по ходу
+                * да, лучше показывать по ходу
+                *
+                * до тех пор пока lastKey === key и data.done !== true - повторяем запрос
+                * зачем нужна проверка ключа? Например может быть несколько запросов в одном подключении и разделять мы их сможем только по ключу
+                * но они не обязательно будут паралельными, поэтому сравнивать предыдущий с последующим не корректно...
+                * занчит будем смотреть только по done для нового запроса
+                *
+                * */
+
+                console.log('ws message', response);
+
+                if (response.status === wsSuccesStatus) {
+                    this.store$.dispatch(new AutorizeSuccess);
+                } else {
+                    this.store$.dispatch(new AutorizeFail);
+                }
+
+                if (!response.data || !response.data.hasOwnProperty('done')){
+                    return;
+                }
+
+                if (!this.searchResult || this.searchResult.key !== response.key) {
+                    this.searchResult = response;
+                } else {
+                    const currentSearch = [...this.searchResult.data.search];
+                    this.searchResult = response;
+                    this.searchResult.data.search = concat(currentSearch, response.data.search);
+                }
+
+                // показываем промежуточные результаты
+
+
+                console.log('searchResult', this.searchResult);
+                if (get(response, 'data.done') === false) {
+                    this.store$.dispatch(new UpdateHotels(this.searchResult.data));
+                    this.searchHotels();
+                } else {
+                    this.store$.dispatch(new SearchHotelsSuccess(this.searchResult.data));
+                    console.log('done!', this.searchResult);
+                }
+
+            }), (error: ErrorEvent) => console.error('WebSocket error!', error)
         );
 
         this.connect();
@@ -81,17 +150,28 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
         this.statusSub.unsubscribe();
     }
 
-    private connect(): void {
+    public connect(): void {
+        // debugger;
+        this.store$.dispatch(new Conneect());
         this.websocket$ = new WebSocketSubject(this.config);
 
         this.websocket$.subscribe(
-            (message) => this.wsMessages$.next(message),
+            (message) => {
+                return this.wsMessages$.next(message)
+            },
             (error: Event) => {
                 if (!this.websocket$) {
                     // run reconnect if errors
                     this.reconnect();
                 }
-            });
+            }
+        );
+    }
+
+    private authorize() {
+        this.store$.dispatch(new AutorizeStart);
+        console.log('authorize');
+        this.send(environment.wsAuthenticate);
     }
 
     private reconnect(): void {
@@ -102,10 +182,11 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
             () => this.connect(),
             null,
             () => {
-                // Subject complete if reconnect attemts ending
+                // Subject complete if reconnect attempts ending
                 this.reconnection$ = null;
 
                 if (!this.websocket$) {
+                    this.store$.dispatch(new ConneectReconnectionExceed());
                     this.wsMessages$.complete();
                     this.connection$.complete();
                 }
@@ -129,13 +210,15 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
      */
     public getMessages(): Observable<any> {
         return this.wsMessages$.pipe(
-            tap(() => {
+            tap((message) => {
+                console.log('getMessages tap 1 message', message);
+
                 this.isLoading$.next(true);
             }),
             filter((message: any) => message.done === true),
-            tap((val) => {
-                console.log('val', val);
-                if (val) {
+            tap((message) => {
+                console.log('getMessages tap 2 message', message);
+                if (message) {
                     this.isLoading$.next(false);
                 }
             }),
@@ -148,8 +231,26 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
     * */
     // public send(action: string, data: any = {}): void {
     public send(request: any): void {
-        if (event && this.isConnected) {
-            this.websocket$.next(<any>JSON.stringify(request));
+        /*
+        * нам надо повторять запрос если data.done === false
+        * знаем мы это только в подписке websocketSub, т.е. в ngonchanges
+        * причём никак сопоставить запрос с входными данными мы не можем...\
+        * можно сохранять первый результат с key во временную переменную
+        *   1. если у него done - true, тогда дело сделано
+        *   2. если done = false, тогда следующие ответы можно сравнивать с уже сохраненным временным значением по key
+        *   если
+        *
+        * для начала сделаем что бы просто работало, через сохранение последних параметров
+        *
+        *
+        * */
+
+        const repeatRequest = new Subject();
+
+        console.log('send request', request);
+
+        if (request && this.isConnected) {
+            this.websocket$.next(request);
         } else {
             console.error('Send error!');
         }
@@ -157,9 +258,19 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
 
     /**
      * Поиск отелей
+     * если params не переданы выполняет запрос с последними параметрами
      * @param params
      */
-    public searchHotels(params: SearchParams): void {
+    public searchHotels(params?: SearchParams): void {
+
+        if (params) {
+            this.lastParams = params;
+        }
+
+        params = params || this.lastParams;
+
+        console.log('searchHotels params', params);
+
         if (!params) {
             throw Error('searchHotels: No params received');
         }
@@ -176,11 +287,9 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
                     // "in": 1558915200000,
                     // "out": 1559001600000
                 },
-                "families": [
-                    {
-                        "adults": 2
-                    }
-                ],
+                "families": [{
+                    "adults": 2
+                }],
                 "lastid": 0,
                 "num": 5
             },
@@ -188,13 +297,7 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
             "type": "service"
         };
 
-        if (this.isConnected) {
-            this.websocket$.next(<any>JSON.stringify(searchParams));
-        } else {
-            if (environment.isDebug) {
-                console.error('Search error: Connection lost');
-            }
-        }
+        this.send(searchParams);
     }
 
 }
