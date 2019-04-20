@@ -15,12 +15,13 @@ import {MatProgressBarModule} from '@angular/material/progress-bar';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 
 import { AppComponent } from './app.component';
-import { reducers } from './reducers';
+import {/*hotelReducers,*/ reducers} from './reducers';
 import { WebsocketModule } from './modules/websocket';
 import { environment } from '../environments/environment';
 import { HotelListItemComponent } from './components/hotel-list-item/hotel-list-item.component';
 import {HotelsEffects} from "./app.effects";
 import { StarsRatingComponent } from './shared/components/stars-rating/stars-rating.component';
+import {HttpClientModule} from "@angular/common/http";
 
 
 @NgModule({
@@ -29,6 +30,7 @@ import { StarsRatingComponent } from './shared/components/stars-rating/stars-rat
         BrowserModule,
         FormsModule,
         ReactiveFormsModule,
+        HttpClientModule,
         EffectsModule.forRoot([HotelsEffects]),
         StoreModule.forRoot(reducers),
         WebsocketModule.config({

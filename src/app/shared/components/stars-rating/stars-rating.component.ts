@@ -5,14 +5,10 @@ import {Component, Input, OnInit} from '@angular/core';
     templateUrl: './stars-rating.component.html',
     styleUrls: ['./stars-rating.component.css']
 })
-export class StarsRatingComponent implements OnInit {
-
-    @Input() starsCount: number = 0;
-
-    constructor() {
+export class StarsRatingComponent{
+    @Input() set starsCount(value: number) {
+        this.starsArr = Array(value).fill(1);
     }
 
-    ngOnInit() {
-    }
-
+    starsArr: number[];
 }
