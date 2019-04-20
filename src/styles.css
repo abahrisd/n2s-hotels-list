@@ -4,6 +4,10 @@
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 
-.loader-container .mat-progress-bar {
+/*.loader-container .mat-progress-bar {
     height: 2px;
+}*/
+
+.mat-icon.star {
+    fill: #fdb97c;
 }

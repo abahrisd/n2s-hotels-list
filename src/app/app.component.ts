@@ -5,13 +5,25 @@ import { Observable } from 'rxjs';
 import { WebsocketService, WS } from './modules/websocket';
 import {environment} from "../environments/environment";
 import {HotelsState} from "./reducers";
-import {Store} from "@ngrx/store";
-import {ActionTypes, AuthorizationTypesUnion, ConnectionTypesUnion, Reconnect, StartSearchHotels} from "./app.actions";
-import {Hotel} from "./shared/models";
+import {select, Store} from "@ngrx/store";
+import {
+    ActionTypes,
+    AuthorizationTypesUnion,
+    ConnectionTypesUnion,
+    Reconnect,
+    SetLoadingState,
+    StartSearchHotels
+} from "./app.actions";
+import {Hotel, HotelsSearchResult} from "./shared/models";
+import {DomSanitizer} from "@angular/platform-browser";
+import {MatIconRegistry} from "@angular/material";
+import {svgIcons} from "./app.constants";
+import {map, take} from "rxjs/operators";
 
-export interface IMessage {
-    id: number;
-    text: string;
+declare global {
+    interface Window {
+        store: any;
+    }
 }
 
 @Component({
@@ -22,14 +34,30 @@ export interface IMessage {
 
 export class AppComponent implements OnInit {
 
-    public connection$: Observable<ConnectionTypesUnion>;
-    public authorization$: Observable<AuthorizationTypesUnion>;
+    public connection$: Observable<ActionTypes>;
+    public authorization$: Observable<ActionTypes>;
     public isLoading$: Observable<boolean>;
+    public total$: Observable<number>;
+    public searchResult$: Observable<HotelsSearchResult>;
     public hotels$: Observable<Hotel[]>;
     public ActionTypes = ActionTypes;
     public filterForm: FormGroup;
 
-    constructor(private fb: FormBuilder, private wsService: WebsocketService, private store$: Store<HotelsState>) {
+    private takeHotelsCount = 20;
+    private showResultsIncrement = 20;
+    private showResultsIncrementText = 20;
+
+    constructor(
+        private fb: FormBuilder,
+        private wsService: WebsocketService,
+        private store$: Store<HotelsState>,
+        iconRegistry: MatIconRegistry,
+        sanitizer: DomSanitizer,
+    ) {
+        // init all icons
+        svgIcons.forEach(icon => {
+            iconRegistry.addSvgIcon( icon.name, sanitizer.bypassSecurityTrustResourceUrl(icon.source));
+        });
     }
 
     ngOnInit() {
@@ -38,10 +66,12 @@ export class AppComponent implements OnInit {
             dateTo: [new Date(2019, 4, 2), Validators.required],
         });
 
-        this.hotels$ = this.store$.select('hotelsData.list');
-        this.isLoading$ = this.store$.select('hotelsData.isLoading');
-        this.connection$ = this.store$.select('connection');
-        this.authorization$ = this.store$.select('authorization');
+        this.searchResult$ = this.store$.pipe(select('hotelsData', 'searchResult'));
+        this.total$ = this.store$.pipe(select('hotelsData', 'searchResult', 'total'));
+        this.hotels$ = this.store$.select('hotelsData', 'searchResult', 'search');
+        this.isLoading$ = this.store$.pipe(select('hotelsData', 'isLoading'));
+        this.connection$ = this.store$.pipe(select('connection'));
+        this.authorization$ = this.store$.pipe(select('authorization'));
     }
 
     onReconnectClick() {
@@ -57,6 +87,7 @@ export class AppComponent implements OnInit {
             };
 
             this.store$.dispatch(new StartSearchHotels(params));
+            this.store$.dispatch(new SetLoadingState(true));
         }
     }
 

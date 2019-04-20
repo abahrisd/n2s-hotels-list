@@ -15,3 +15,20 @@
 .filter-form__form-field {
 
 }
+
+.hotels-list {
+    width: 1000px;
+}
+
+.hotels-list__total {
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.hotels-list__show-next-button {
+    width: 100%;
+    padding: 20px;
+    font-size: 30px;
+    font-weight: 400;
+}
+

@@ -1,5 +1,5 @@
-<div [style.position]="'absolute'" class="loader-container">
-    <mat-progress-bar *ngIf="isLoading$ | async" mode="indeterminate"></mat-progress-bar>
+<div *ngIf="isLoading$ | async" class="loader-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
 <div class="container">
@@ -39,44 +39,17 @@
             <mat-datepicker #dateToPicker></mat-datepicker>
         </mat-form-field>
 
-        <button mat-stroked-button type="submit" color="primary">Search hotels</button>
+        <button mat-stroked-button
+                type="submit"
+                [disabled]="(authorization$ | async) !== ActionTypes.AutorizeSuccess"
+                color="primary"
+        >Search hotels</button>
     </form>
 
-    <!--<div class="row">
-        <div class="messages">
-            <ul *ngIf="messages$ | async as messages">
-                <li *ngFor="let message of messages">
-                    <strong>№{{ message.id }}:</strong> {{ message.text }}
-                </li>
-            </ul>
-        </div>
-
-        <div class="counter">
-            <strong *ngIf="counter$ | async as counter">Update websocket counter: {{ counter }}</strong>
-        </div>
+    <div class="hotels-list" *ngIf="searchResult$ | async">
+        <div class="hotels-list__total">Нашлось {{(hotels$ | async)?.length}} результатов</div>
+        <div class="hotels-list__total">Нашлось всего {{(total$ | async)}} результатов</div>
+        <app-hotel-list-item *ngFor="let hotel of (hotels$ | async)" [hotel]="hotel"></app-hotel-list-item>
     </div>
-
-    <div class="row">
-        <filterForm [formGroup]="filterForm" autocomplete="off" novalidate (submit)="sendText()">
-            <div class="filterForm-group">
-                <div class="filterForm-control">
-                    <textarea placeholder="Email" autocomplete="off" formControlName="text"></textarea>
-                </div>
-            </div>
-            <div class="filterForm-group">
-                <button type="submit" [disabled]="filterForm.invalid">Send text</button>
-            </div>
-        </filterForm>
-
-        <div class="texts">
-            <ul *ngIf="texts$ | async as texts">
-                <li *ngFor="let text of texts; let i = index;">
-                    {{ text }}
-                    <span class="remove" (click)="removeText(i)">x</span>
-                </li>
-            </ul>
-        </div>
-    </div>-->
-
 
 </div>

@@ -14,6 +14,8 @@ export enum ActionTypes {
     AutorizeSuccess = '[App] AutorizeSuccess',
     AutorizeFail = '[App] AutorizeFail',
 
+    SetLoadingState = 'App Component] SetLoadingState',
+
     Empty = 'App Component] Empty',
 
     SearchHotels = '[Search Hotels Component] SearchHotels',
@@ -64,6 +66,11 @@ export class UpdateHotels implements Action {
 export class SearchHotelsSuccess implements Action {
     readonly type = ActionTypes.SearchHotelsSuccess;
     constructor(public payload: HotelsSearchResult) {}
+}
+
+export class SetLoadingState implements Action {
+    readonly type = ActionTypes.SetLoadingState;
+    constructor(public payload: boolean) {}
 }
 
 export class Fail implements Action {

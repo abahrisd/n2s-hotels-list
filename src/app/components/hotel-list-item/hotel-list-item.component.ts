@@ -1,62 +1,31 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {Hotel} from "../../shared/models/hotel.model";
+import {Hotel} from "../../shared/models";
 import {environment} from "../../../environments/environment";
+import get from 'lodash/get';
 
 @Component({
     selector: 'app-hotel-list-item',
     templateUrl: './hotel-list-item.component.html',
     styleUrls: ['./hotel-list-item.component.css']
 })
-export class HotelListItemComponent implements OnInit {
+export class HotelListItemComponent {
 
-    @Input() hotel: Hotel = {
-        info: {
-            addr: 'addr',
-            cat: 3,
-            catid: 'catid',
-            catname: 'catname',
-            id: 'id',
-            img: environment.imagesHost + '/1811ddfbfa0f57141bb92cd4eaff36b302e29c4b51a90f2711fe94c06ccbae1c_800_240.jpg',
-            imgnum: 8,
-            isdesc: true,
-            name: 'addr',
-            point: [53, 54],
-            site: {
-                label: 'addr',
-                url: 'addr',
-            }
-        },
-        items: [[{
-            commerce: {
-                currency: 1,
-                discount: 1,
-                offer: 'offer',
-                original: 1,
-                payment: 1,
-                providerid: 'providerid',
-                reservationfee: 1,
-                tl: 1,
-                tltime: 1,
-                toriginal: 1,
-                tpayment: 1,
-            },
-            meal: 'meal',
-            type: 'type',
-        }]],
-    };
+    @Input() set hotel(value: Hotel) {
+        const tpayment = get(value, 'items[0][0].commerce.tpayment');
 
-    // ""
-    imgSrc
-    discountPercent
-    hotelName
-    locationName
-    tpayment
-    payment
+        if (tpayment) {
+            const payment = get(value, 'items[0][0].commerce.payment');
+            this.discountPercents = Math.ceil((payment - tpayment)/payment*100);
+        }
 
-    constructor() {
+        this._hotel = value;
     }
-
-    ngOnInit() {3
+    get hotel (): Hotel {
+        return this._hotel;
     }
+    private _hotel: Hotel;
+
+    public environment = environment;
+    public discountPercents: number;
 
 }

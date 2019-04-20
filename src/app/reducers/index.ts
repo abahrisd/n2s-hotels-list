@@ -1,7 +1,7 @@
 import {
     Action,
     ActionReducer,
-    ActionReducerMap,
+    ActionReducerMap, combineReducers,
     createFeatureSelector,
     createSelector,
     MetaReducer
@@ -12,7 +12,7 @@ import {
     ActionTypes,
     AuthorizationTypesUnion,
     ConnectionTypesUnion,
-    HotelsAction,
+    HotelsAction, StartSearchHotels,
 } from "../app.actions";
 
 
@@ -26,11 +26,18 @@ export interface HotelsState {
 }
 
 export const reducers: ActionReducerMap<HotelsState> = {
-    hotelsData: hotelsReducer,
     connection: connectionReducer,
     authorization: authorizationReducer,
-
+    hotelsData: combineReducers({
+        isLoading: isLoadingReducer,
+        searchResult: searchResultReducer,
+    }),
 };
+
+/*export const hotelReducers: ActionReducerMap<HotelsState> = {
+    isLoading: isLoadingReducer,
+    searchResult: searchResultReducer,
+};*/
 
 export function connectionReducer(state: ConnectionTypesUnion = undefined, action: HotelsAction) {
 
@@ -39,8 +46,19 @@ export function connectionReducer(state: ConnectionTypesUnion = undefined, actio
         case ActionTypes.ConneectSuccess:
         case ActionTypes.ConneectFail:
         case ActionTypes.ConneectReconnectionExceed:
-            console.log('connectionReducer action', action);
             return action.type;
+    }
+
+    return state;
+}
+
+export function isLoadingReducer(state: boolean = false, action: HotelsAction) {
+
+    switch (action.type) {
+        case ActionTypes.SetLoadingState:
+            if (action.payload !== state ) {
+                return action.payload;
+            }
     }
 
     return state;
@@ -52,33 +70,25 @@ export function authorizationReducer(state: AuthorizationTypesUnion = undefined,
         case ActionTypes.AutorizeStart:
         case ActionTypes.AutorizeSuccess:
         case ActionTypes.AutorizeFail:
-            console.log('authorizationReducer action', action);
-            return action.type;
+            if (state !== action.type) {
+                return action.type;
+            }
     }
 
     return state;
 }
 
-export function hotelsReducer(state = {isLoading: false, searchResult: new HotelsSearchResult}, action: HotelsAction) {
-    let newState = {...state};
-
-    console.log('hotelsReducer action', action);
+export function searchResultReducer(state: HotelsSearchResult = undefined, action: HotelsAction) {
 
     switch (action.type) {
         case ActionTypes.StartSearchHotels:
-            newState.isLoading = true;
-            break;
+            return;
         case ActionTypes.UpdateHotels:
-            newState.searchResult = action.payload;
-            break;
         case ActionTypes.SearchHotelsSuccess:
-            newState.isLoading = false;
-            newState.searchResult = action.payload;
-            break;
-        case ActionTypes.Fail:
-            newState.isLoading = false;
-            break;
+            console.log('searchResultReducer', action.payload);
+            console.log('======= length: ', action.payload.search.length);
+            return action.payload;
     }
 
-    return newState;
+    return state;
 }
