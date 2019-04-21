@@ -64,8 +64,6 @@ export function searchResultReducer(state: HotelsSearchResult, action: HotelsAct
             return;
         case ActionTypes.UpdateHotels:
         case ActionTypes.SearchHotelsSuccess:
-            console.log('searchResultReducer', action.payload);
-            console.log('======= length: ', action.payload.search.length);
             return action.payload;
     }
 

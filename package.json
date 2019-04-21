@@ -10,7 +10,7 @@
     "e2e": "ng e2e",
     "postinstall": "ng build --prod"
   },
-  "private": true,
+  "private": false,
   "dependencies": {
     "@angular-devkit/build-angular": "~0.13.0",
     "@angular/animations": "^7.2.13",
