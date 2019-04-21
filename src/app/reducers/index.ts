@@ -1,46 +1,28 @@
-import {
-    Action,
-    ActionReducer,
-    ActionReducerMap, combineReducers,
-    createFeatureSelector,
-    createSelector,
-    MetaReducer
-} from '@ngrx/store';
-import {environment} from '../../environments/environment';
-import {Hotel, HotelsSearchResult} from "../shared/models";
-import {
-    ActionTypes,
-    AuthorizationTypesUnion,
-    ConnectionTypesUnion,
-    HotelsAction, StartSearchHotels,
-} from "../app.actions";
-
+import { ActionReducerMap } from '@ngrx/store';
+import { HotelsSearchResult } from '../shared/models';
+import { ActionTypes, AuthorizationTypesUnion, ConnectionTypesUnion, HotelsAction } from '../app.actions';
 
 export interface HotelsState {
     connection: ConnectionTypesUnion;
     authorization: AuthorizationTypesUnion;
-    hotelsData: {
-        isLoading: boolean;
-        searchResult: HotelsSearchResult
-    }
+}
+
+export interface HotelsDataState {
+    isLoading: boolean;
+    searchResult: HotelsSearchResult;
 }
 
 export const reducers: ActionReducerMap<HotelsState> = {
     connection: connectionReducer,
-    authorization: authorizationReducer,
-    hotelsData: combineReducers({
-        isLoading: isLoadingReducer,
-        searchResult: searchResultReducer,
-    }),
+    authorization: authorizationReducer
 };
 
-/*export const hotelReducers: ActionReducerMap<HotelsState> = {
+export const hotelsDataReducers: ActionReducerMap<HotelsDataState> = {
     isLoading: isLoadingReducer,
-    searchResult: searchResultReducer,
-};*/
+    searchResult: searchResultReducer
+};
 
-export function connectionReducer(state: ConnectionTypesUnion = undefined, action: HotelsAction) {
-
+export function connectionReducer(state: ConnectionTypesUnion, action: HotelsAction) {
     switch (action.type) {
         case ActionTypes.Conneect:
         case ActionTypes.ConneectSuccess:
@@ -53,10 +35,9 @@ export function connectionReducer(state: ConnectionTypesUnion = undefined, actio
 }
 
 export function isLoadingReducer(state: boolean = false, action: HotelsAction) {
-
     switch (action.type) {
         case ActionTypes.SetLoadingState:
-            if (action.payload !== state ) {
+            if (action.payload !== state) {
                 return action.payload;
             }
     }
@@ -64,8 +45,7 @@ export function isLoadingReducer(state: boolean = false, action: HotelsAction) {
     return state;
 }
 
-export function authorizationReducer(state: AuthorizationTypesUnion = undefined, action: HotelsAction) {
-
+export function authorizationReducer(state: AuthorizationTypesUnion, action: HotelsAction) {
     switch (action.type) {
         case ActionTypes.AutorizeStart:
         case ActionTypes.AutorizeSuccess:
@@ -78,8 +58,7 @@ export function authorizationReducer(state: AuthorizationTypesUnion = undefined,
     return state;
 }
 
-export function searchResultReducer(state: HotelsSearchResult = undefined, action: HotelsAction) {
-
+export function searchResultReducer(state: HotelsSearchResult, action: HotelsAction) {
     switch (action.type) {
         case ActionTypes.StartSearchHotels:
             return;
