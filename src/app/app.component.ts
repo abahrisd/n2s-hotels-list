@@ -2,14 +2,11 @@ import {Component, OnInit} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 
-import { WebsocketService, WS } from './modules/websocket';
-import {environment} from "../environments/environment";
+import { WebsocketService } from './modules/websocket';
 import {HotelsState} from "./reducers";
 import {select, Store} from "@ngrx/store";
 import {
     ActionTypes,
-    AuthorizationTypesUnion,
-    ConnectionTypesUnion,
     Reconnect,
     SetLoadingState,
     StartSearchHotels
@@ -18,13 +15,6 @@ import {Hotel, HotelsSearchResult} from "./shared/models";
 import {DomSanitizer} from "@angular/platform-browser";
 import {MatIconRegistry} from "@angular/material";
 import {svgIcons} from "./app.constants";
-import {map, take} from "rxjs/operators";
-
-declare global {
-    interface Window {
-        store: any;
-    }
-}
 
 @Component({
     selector: 'app-root',
@@ -33,7 +23,6 @@ declare global {
 })
 
 export class AppComponent implements OnInit {
-
     public connection$: Observable<ActionTypes>;
     public authorization$: Observable<ActionTypes>;
     public isLoading$: Observable<boolean>;
@@ -42,10 +31,6 @@ export class AppComponent implements OnInit {
     public hotels$: Observable<Hotel[]>;
     public ActionTypes = ActionTypes;
     public filterForm: FormGroup;
-
-    private takeHotelsCount = 20;
-    private showResultsIncrement = 20;
-    private showResultsIncrementText = 20;
 
     constructor(
         private fb: FormBuilder,

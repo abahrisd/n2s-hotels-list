@@ -88,8 +88,6 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
         this.websocketSub = this.wsMessages$.subscribe(
             ((response: any) => {
 
-                console.log('ws message', response);
-
                 if (response.status === wsSuccesStatus) {
                     this.store$.dispatch(new AutorizeSuccess);
                 } else {
@@ -102,24 +100,17 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
                     return;
                 }
 
-                if (!this.searchResult || this.searchResult.key !== response.key) {
-                    this.searchResult = response;
-                } else {
-                    const currentSearch = [...this.searchResult.data.search];
-                    this.searchResult = response;
-                    this.searchResult.data.search = concat(currentSearch, response.data.search);
-                }
-
-                // const searchResultData = this.getUpdatedSearchResultData(response);
-                // console.log('searchResultData', searchResultData);
+                const oldHash = get(this.searchResult, 'data.hash');
+                const newHash = get(response, 'data.hash');
+                const searchResultData = this.getUpdatedSearchResultData(response);
 
                 if (get(response, 'data.done') === false) {
-                    // if (response.data.hash !== this.searchResult.data.hash) {
-                        this.store$.dispatch(new UpdateHotels(this.searchResult.data));
-                    // }
+                    if (oldHash !== newHash) {
+                        this.store$.dispatch(new UpdateHotels(searchResultData));
+                    }
                     this.repeatSearchHotelsWithLastParams();
                 } else {
-                    this.store$.dispatch(new SearchHotelsSuccess(this.searchResult.data));
+                    this.store$.dispatch(new SearchHotelsSuccess(searchResultData));
                     this.store$.dispatch(new SetLoadingState(false));
                 }
 
