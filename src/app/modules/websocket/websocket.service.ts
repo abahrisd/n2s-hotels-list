@@ -1,34 +1,34 @@
 import { Injectable, OnDestroy, Inject } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { Observable, SubscriptionLike, Subject, Observer, interval } from 'rxjs';
-import {delay, filter, map, tap} from 'rxjs/operators';
+import { share, distinctUntilChanged, takeWhile, delay, filter, map, tap } from 'rxjs/operators';
 import { WebSocketSubject, WebSocketSubjectConfig } from 'rxjs/webSocket';
 import concat from 'lodash/concat';
 import get from 'lodash/get';
 
-import { share, distinctUntilChanged, takeWhile } from 'rxjs/operators';
-import { IWebsocketService, IWsMessage, WebSocketConfig } from './websocket.interfaces';
+import { WebSocketConfig } from './websocket.interfaces';
 import { config } from './websocket.config';
-import {SearchParams} from "../../shared/models/search-params.model";
-import {environment} from "../../../environments/environment";
-import {Hotel} from "../../shared/models/hotel.model";
-import {Store} from "@ngrx/store";
-import {HotelsState} from "../../reducers";
+import { SearchParams } from '../../shared/models/search-params.model';
+import { environment } from '../../../environments/environment';
+import { HotelsState } from '../../reducers';
 import {
     AutorizeFail,
-    AutorizeStart, AutorizeSuccess,
+    AutorizeStart,
+    AutorizeSuccess,
     Conneect,
     ConneectFail,
     ConneectReconnectionExceed,
-    ConneectSuccess, SearchHotelsSuccess, SetLoadingState,
+    ConneectSuccess,
+    SearchHotelsSuccess,
+    SetLoadingState,
     UpdateHotels
-} from "../../app.actions";
-import {wsSuccesStatus} from "../../app.constants";
+} from '../../app.actions';
+import { wsSuccesStatus } from '../../app.constants';
 
 @Injectable({
     providedIn: 'root'
 })
-export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
-
+export class WebsocketService implements OnDestroy {
     private config: WebSocketSubjectConfig<any>;
 
     private websocketSub: SubscriptionLike;
@@ -69,34 +69,37 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
             }
         };
 
-        this.status$ = new Observable<boolean>((observer) => {
+        this.status$ = new Observable<boolean>(observer => {
             this.connection$ = observer;
-        }).pipe(share(), distinctUntilChanged());
+        }).pipe(
+            share(),
+            distinctUntilChanged()
+        );
 
-        this.statusSub = this.status$
-            .subscribe((isConnected) => {
-                this.isConnected = isConnected;
+        this.statusSub = this.status$.subscribe(isConnected => {
+            this.isConnected = isConnected;
 
-                if (!this.reconnection$ && typeof(isConnected) === 'boolean' && !isConnected) {
-                    this.store$.dispatch(new ConneectFail());
-                    this.reconnect();
-                } else {
-                    this.authorize();
-                }
-            });
+            if (!this.reconnection$ && typeof isConnected === 'boolean' && !isConnected) {
+                this.store$.dispatch(new ConneectFail());
+                this.reconnect();
+            } else {
+                this.authorize();
+            }
+        });
 
         this.websocketSub = this.wsMessages$.subscribe(
-            ((response: any) => {
+            (response: any) => {
+                console.log('ws message', response);
 
                 if (response.status === wsSuccesStatus) {
-                    this.store$.dispatch(new AutorizeSuccess);
+                    this.store$.dispatch(new AutorizeSuccess());
                 } else {
-                    this.store$.dispatch(new AutorizeFail);
+                    this.store$.dispatch(new AutorizeFail());
                     return;
                 }
 
                 // если в ответе нет поля done - то это не поисковый запрос, а запрос авторизации, дальше не идём
-                if (!response.data || !response.data.hasOwnProperty('done')){
+                if (!response.data || !response.data.hasOwnProperty('done')) {
                     return;
                 }
 
@@ -113,8 +116,8 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
                     this.store$.dispatch(new SearchHotelsSuccess(searchResultData));
                     this.store$.dispatch(new SetLoadingState(false));
                 }
-
-            }), (error: ErrorEvent) => console.error('WebSocket error!', error)
+            },
+            (error: ErrorEvent) => console.error('WebSocket error!', error)
         );
 
         this.connect();
@@ -130,8 +133,8 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
         this.websocket$ = new WebSocketSubject(this.config);
 
         this.websocket$.pipe(delay(2000)).subscribe(
-            (message) => {
-                return this.wsMessages$.next(message)
+            message => {
+                return this.wsMessages$.next(message);
             },
             (error: Event) => {
                 if (!this.websocket$) {
@@ -142,26 +145,22 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
     }
 
     private authorize() {
-        this.store$.dispatch(new AutorizeStart);
+        this.store$.dispatch(new AutorizeStart());
         this.send(environment.wsAuthenticate);
     }
 
     private reconnect(): void {
-        this.reconnection$ = interval(this.reconnectInterval)
-            .pipe(takeWhile((v, index) => index < this.reconnectAttempts && !this.websocket$));
+        this.reconnection$ = interval(this.reconnectInterval).pipe(takeWhile((v, index) => index < this.reconnectAttempts && !this.websocket$));
 
-        this.reconnection$.subscribe(
-            () => this.connect(),
-            null,
-            () => {
-                this.reconnection$ = null;
+        this.reconnection$.subscribe(() => this.connect(), null, () => {
+            this.reconnection$ = null;
 
-                if (!this.websocket$) {
-                    this.store$.dispatch(new ConneectReconnectionExceed());
-                    this.wsMessages$.complete();
-                    this.connection$.complete();
-                }
-            });
+            if (!this.websocket$) {
+                this.store$.dispatch(new ConneectReconnectionExceed());
+                this.wsMessages$.complete();
+                this.connection$.complete();
+            }
+        });
     }
 
     public send(request: any): void {
@@ -184,23 +183,25 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
         this.lastParams = params;
 
         const searchParams = {
-            "action": "accommodation",
-            "data": {
-                "place": {
-                    "in": "CI005575LO"
+            action: 'accommodation',
+            data: {
+                place: {
+                    in: 'CI005575LO'
                 },
-                "date": {
-                    "in": params.timestampFrom,
-                    "out": params.timestampTo
+                date: {
+                    in: params.timestampFrom,
+                    out: params.timestampTo
                 },
-                "families": [{
-                    "adults": 2
-                }],
-                "lastid": 0,
-                "num": 5
+                families: [
+                    {
+                        adults: 2
+                    }
+                ],
+                lastid: 0,
+                num: 5
             },
-            "key": "58fd27fa-4f81-4e67-a6bf-0e0e3fe4d876",
-            "type": "service"
+            key: '58fd27fa-4f81-4e67-a6bf-0e0e3fe4d876',
+            type: 'service'
         };
 
         this.send(searchParams);
@@ -217,5 +218,4 @@ export class WebsocketService implements /*IWebsocketService,*/ OnDestroy {
 
         return this.searchResult.data;
     }
-
 }

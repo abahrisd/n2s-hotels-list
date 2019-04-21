@@ -1,26 +1,25 @@
-
 <div class="hotels-list__container">
     <div class="img-block">
-        <img class="img-hotel" [src]="environment.imagesHost + hotel.info.img" alt="">
+        <img class="img-hotel" [src]="environment.imagesHost + hotel.info.img" alt="" />
         <div class="discount-block" *ngIf="discountPercents">
-            <span class="discount-text">Сэкономьте {{discountPercents}}%</span>
+            <span class="discount-text">Сэкономьте {{ (hotel?.items)[0][0].commerce.discount }}%</span>
         </div>
     </div>
 
     <div class="description-block">
-        <span class="big-text">{{hotel?.info?.name}}</span>
+        <span class="big-text">{{ hotel?.info?.name }}</span>
         <app-stars-rating [starsCount]="hotel?.info?.cat"></app-stars-rating>
         <div class="description-block__location">
             <span>Расположение</span>
-            <span>{{hotel?.info?.addr}}</span>
+            <span>{{ hotel?.info?.addr }}</span>
         </div>
     </div>
 
     <div class="price-block">
         <div class="price-discount">
-            <ng-container *ngIf="discountPercents; else priceNoDiscount">
-                <span class="price-no-discount">{{hotel?.items[0][0].commerce.payment}} RUB</span>
-                <span class="big-text">{{hotel?.items[0][0].commerce.tpayment}} RUB</span>
+            <ng-container *ngIf="(hotel?.items)[0][0].commerce.discount; else priceNoDiscount">
+                <span class="price-no-discount">{{ (hotel?.items)[0][0].commerce.payment }} RUB</span>
+                <span class="big-text">{{ (hotel?.items)[0][0].commerce.tpayment }} RUB</span>
             </ng-container>
         </div>
 
@@ -31,5 +30,5 @@
 </div>
 
 <ng-template #priceNoDiscount>
-    <span class="big-text">{{hotel?.items[0][0].commerce.payment}} RUB</span>
+    <span class="big-text">{{ (hotel?.items)[0][0].commerce.payment }} RUB</span>
 </ng-template>
